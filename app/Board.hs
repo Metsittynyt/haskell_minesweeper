@@ -6,7 +6,8 @@ module Board (
     calculateAdjacency,
     updateCell,
     printBoard,
-     boardSize
+    boardSize,
+    isCellRevealed
 ) where
 
 import System.Random (randomRIO)
@@ -26,6 +27,10 @@ initBoard width height = replicate height (replicate width (Cell False False 0))
 -- A function to get the dimensions of the board
 boardSize :: Board -> (Int, Int)
 boardSize brd = (length brd, length (head brd))
+
+-- A function to access specific cell based on coordinates
+isCellRevealed :: Board -> (Int, Int) -> Bool
+isCellRevealed brd (x, y) = isRevealed ((brd !! y) !! x)
 
 -- Place mines at random locations on the board
 placeMines :: Board -> Int -> IO Board

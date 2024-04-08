@@ -14,6 +14,7 @@ main :: IO ()
 main = do
     -- Welcome message and quick guide on how to play.
     putStrLn "Welcome to Minesweeper!"
+    putStrLn ""
     putStrLn "The board size is 10 x 10. There are total of 10 bombs in hiding."
     putStrLn "You reveal cells by giving column and row number, separated by space."
     putStrLn "Column an row numbers go from 0 to 9."
@@ -31,7 +32,8 @@ mainLoop :: GameState -> IO ()
 mainLoop gameState = do
   case gameStatus gameState of
     Ongoing -> do
-      putStrLn "Enter column and row to reveal, separated by space, or type 'quit' to exit:"
+      putStrLn ""
+      putStrLn "Enter column and row to reveal, or type 'quit' to exit: "
       input <- getLine
       -- Check if the input is a quit command.
       if isQuitCommand input then do
@@ -42,6 +44,9 @@ mainLoop gameState = do
           -- Check if the move is valid.
           if not (isValidMove (board gameState) coords) then do
             putStrLn "Input is out of bounds, please try again."
+            mainLoop gameState
+          else if isCellRevealed (board gameState) coords then do
+            putStrLn "This cell is already revealed. Try another one."
             mainLoop gameState
           else do
             -- Proceed with revealing the cell if the move is valid.
