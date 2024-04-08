@@ -6,39 +6,52 @@ import Text.Read (readMaybe)
 
 import Board
 import GameState
-import Input (parseInput)
+import Input
 
+
+-- Main function
 main :: IO ()
 main = do
+    -- Welcome message and quick guide on how to play.
     putStrLn "Welcome to Minesweeper!"
+    putStrLn "The board size is 10 x 10. There are total of 10 bombs in hiding."
+    putStrLn "You reveal cells by giving column and row number, separated by space."
+    putStrLn "Column an row numbers go from 0 to 9."
+
+    -- Initiate the board and start the game.
     let initialBoard = initBoard 10 10
-    minedBoard <- placeMines initialBoard 15
+    minedBoard <- placeMines initialBoard 10
     let finalBoard = calculateAdjacency minedBoard
     let gameState = GameState finalBoard Ongoing
     mainLoop gameState
 
+
+-- Main game loop
 mainLoop :: GameState -> IO ()
 mainLoop gameState = do
   case gameStatus gameState of
     Ongoing -> do
-      printBoard (board gameState)
-      putStrLn "Enter row and column to reveal, separated by space:"
+      putStrLn "Enter column and row to reveal, separated by space, or type 'quit' to exit:"
       input <- getLine
-      if input == "quit" then do
-        putStrLn "Exit game. Thanks for playing!"
+      -- Check if the input is a quit command.
+      if isQuitCommand input then do
+        putStrLn "Game over. Thanks for playing!"
         return ()
-      else do
-        let parsedInput = map readMaybe . words $ input :: [Maybe Int]
-        case parsedInput of
-          [Just row, Just col] -> do
-            let newState = revealCell (col, row) gameState
-            printBoard (board newState) -- Print the updated board.
+      else case parseInput input of
+        Just coords -> 
+          -- Check if the move is valid.
+          if not (isValidMove (board gameState) coords) then do
+            putStrLn "Input is out of bounds, please try again."
+            mainLoop gameState
+          else do
+            -- Proceed with revealing the cell if the move is valid.
+            let newState = revealCell coords gameState
+            printBoard (board newState)
             case gameStatus newState of
               Lost -> putStrLn "Boom! You've hit a mine. Game over."
               _    -> mainLoop newState
-          _ -> do
-            putStrLn "Invalid input. Please enter valid row and column numbers separated by a space."
-            mainLoop gameState
+        Nothing -> do
+          putStrLn "Invalid input. Please enter valid row and column numbers separated by a space, or type 'quit' to exit."
+          mainLoop gameState
     Won -> putStrLn "Congratulations! You've won the game!"
-    Lost -> putStrLn "Unexpected game over." -- This case might now be redundant.
-    
+    Lost -> putStrLn "Unexpected game over."
