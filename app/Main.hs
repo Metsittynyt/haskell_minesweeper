@@ -37,7 +37,7 @@ mainLoop gameState = do
       input <- getLine
       -- Check if the input is a quit command.
       if isQuitCommand input then do
-        putStrLn "Game over. Thanks for playing!"
+        putStrLn "Exiting game..."
         return ()
       else case parseInput input of
         Just coords -> 
@@ -52,7 +52,10 @@ mainLoop gameState = do
             -- Proceed with revealing the cell if the move is valid.
             let newState = revealCell coords gameState
             printBoard (board newState)
-            case gameStatus newState of
+            -- Check if the game is won
+            if isGameWon newState then do
+                putStrLn "Congratulations! You've won the game!"
+            else case gameStatus newState of
               Lost -> putStrLn "Boom! You've hit a mine. Game over."
               _    -> mainLoop newState
         Nothing -> do
