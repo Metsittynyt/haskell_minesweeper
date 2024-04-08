@@ -25,7 +25,7 @@ mainLoop gameState = do
       putStrLn "Enter row and column to reveal, separated by space:"
       input <- getLine
       if input == "quit" then do
-        putStrLn "Game over. Thanks for playing!"
+        putStrLn "Exit game. Thanks for playing!"
         return ()
       else do
         let parsedInput = map readMaybe . words $ input :: [Maybe Int]
@@ -36,7 +36,9 @@ mainLoop gameState = do
             case gameStatus newState of
               Lost -> putStrLn "Boom! You've hit a mine. Game over."
               _    -> mainLoop newState
-          _ -> putStrLn "Invalid input. Please enter valid row and column numbers separated by a space."
+          _ -> do
+            putStrLn "Invalid input. Please enter valid row and column numbers separated by a space."
+            mainLoop gameState
     Won -> putStrLn "Congratulations! You've won the game!"
     Lost -> putStrLn "Unexpected game over." -- This case might now be redundant.
     
