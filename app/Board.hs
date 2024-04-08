@@ -56,11 +56,16 @@ calculateAdjacency brd = [[ calculateCellAdjacency x y | x <- [0..width-1]] | y 
       cellAt (x, y) = (brd !! y) !! x
       in cell { adjacentMines = countMines }
 
--- Print the game board to the console
+-- Print the game board to the console with row and column indices
 printBoard :: Board -> IO ()
-printBoard brd = mapM_ printRow brd
+printBoard brd = do
+    let colNumbers = concatMap (\i -> " " ++ show i) [0..length (head brd) - 1]
+    putStrLn (" " ++ colNumbers)  -- Adjusted: Added an extra space for alignment
+    mapM_ printRow (zip [0..] brd)
   where
-    printRow row = putStrLn . concat . intersperse " " $ map showCell row
+    printRow (idx, row) = do
+        putStr (show idx ++ " ")  -- Print the row number before each row
+        putStrLn . concat . intersperse " " $ map showCell row
     showCell cell
       | isRevealed cell = if isMine cell then "*" else show (adjacentMines cell)
       | otherwise = "X"
