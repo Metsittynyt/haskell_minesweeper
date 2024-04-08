@@ -1,0 +1,12 @@
+# Object files
+*.o
+
+# Interface files
+*.hi
+
+# Executable files
+*.exe
+
+# Other
+.vscode/
+dist-newstyle/
