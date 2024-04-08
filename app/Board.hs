@@ -5,7 +5,8 @@ module Board (
     placeMines,
     calculateAdjacency,
     updateCell,
-    printBoard
+    printBoard,
+     boardSize
 ) where
 
 import System.Random (randomRIO)
@@ -21,6 +22,10 @@ data Cell = Cell {
 -- Initialize a game board with all cells hidden
 initBoard :: Int -> Int -> Board
 initBoard width height = replicate height (replicate width (Cell False False 0))
+
+-- A function to get the dimensions of the board
+boardSize :: Board -> (Int, Int)
+boardSize brd = (length brd, length (head brd))
 
 -- Place mines at random locations on the board
 placeMines :: Board -> Int -> IO Board
