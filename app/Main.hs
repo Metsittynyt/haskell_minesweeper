@@ -21,6 +21,7 @@ mainLoop :: GameState -> IO ()
 mainLoop gameState = do
   case gameStatus gameState of
     Ongoing -> do
+      printBoard (board gameState)
       putStrLn "Enter row and column to reveal, separated by space:"
       input <- getLine
       if input == "quit" then do
