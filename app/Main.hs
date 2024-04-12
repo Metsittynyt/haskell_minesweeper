@@ -3,11 +3,11 @@ module Main where
 import System.Random
 import Data.List (intersperse)
 import Text.Read (readMaybe)
+import Graphics.Gloss
 
 import Board
 import GameState
 import Input
-
 
 -- Main function
 main :: IO ()
