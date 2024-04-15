@@ -19,53 +19,11 @@ main = do
     putStrLn "You reveal cells by giving column and row number, separated by space."
     putStrLn "Column an row numbers go from 0 to 9."
 
-    -- Initiate the board and start the game.
-    let initialBoard = initBoard 10 10
-    minedBoard <- placeMines initialBoard 10
-    let finalBoard = calculateAdjacency minedBoard
-    let gameState = GameState finalBoard Ongoing
-    -- mainLoop gameState
+    -- Initiate the game state.
+    gameState <- initialGameState
 
     -- Setup the display window
     let windowSize = 10 * 32 + 2 * 40
-    let window = InWindow "Minesweeper" (windowSize, windowSize) (100, 100)
+    let window = InWindow "Minesweeper" (windowSize, windowSize + 100) (100, 100)
     -- Run the game using playIO from Gloss
     playIO window white 30 gameState drawGame handleEvent updateGame
-
-
--- Main game loop
-mainLoop :: GameState -> IO ()
-mainLoop gameState = do
-  case gameStatus gameState of
-    Ongoing -> do
-      putStrLn ""
-      putStrLn "Enter column and row to reveal, or type 'quit' to exit: "
-      input <- getLine
-      -- Check if the input is a quit command.
-      if isQuitCommand input then do
-        putStrLn "Exiting game..."
-        return ()
-      else case parseInput input of
-        Just coords -> 
-          -- Check if the move is valid.
-          if not (isValidMove (board gameState) coords) then do
-            putStrLn "Input is out of bounds, please try again."
-            mainLoop gameState
-          else if isCellRevealed (board gameState) coords then do
-            putStrLn "This cell is already revealed. Try another one."
-            mainLoop gameState
-          else do
-            -- Proceed with revealing the cell if the move is valid.
-            let newState = revealCell coords gameState
-            printBoard (board newState)
-            -- Check if the game is won
-            if isGameWon newState then do
-                putStrLn "Congratulations! You've won the game!"
-            else case gameStatus newState of
-              Lost -> putStrLn "Boom! You've hit a mine. Game over."
-              _    -> mainLoop newState
-        Nothing -> do
-          putStrLn "Invalid input. Please enter valid row and column numbers separated by a space, or type 'quit' to exit."
-          mainLoop gameState
-    Won -> putStrLn "Congratulations! You've won the game!"
-    Lost -> putStrLn "Unexpected game over."
