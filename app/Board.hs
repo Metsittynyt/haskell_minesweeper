@@ -7,6 +7,7 @@ module Board (
     adjacentCoords,
     printBoard,
     isCellRevealed,
+    updateCell,
     safeGetCell,
     safeSetCellRevealed,
     boardSize
@@ -20,14 +21,16 @@ import Data.Maybe (catMaybes)
 -- Define the board and cell data structures.
 type Board = [[Cell]]
 data Cell = Cell {
-  isMine :: Bool,
-  isRevealed :: Bool,
-  adjacentMines :: Int
-} deriving (Eq, Show)
+    isMine :: Bool,
+    isRevealed :: Bool,
+    isFlagged :: Bool,  -- Add this field
+    adjacentMines :: Int
+}
+
 
 -- Initialize a game board with all cells hidden.
 initBoard :: Int -> Int -> Board
-initBoard width height = replicate height (replicate width (Cell False False 0))
+initBoard width height = replicate height (replicate width (Cell False False False 0))
 
 -- Place mines at random locations on the board.
 placeMines :: Board -> Int -> IO Board
@@ -67,13 +70,15 @@ adjacentCoords :: (Int, Int) -> Int -> Int -> [(Int, Int)]
 adjacentCoords (x, y) maxWidth maxHeight =
   [(nx, ny) | nx <- [x-1..x+1], ny <- [y-1..y+1], nx >= 0, ny >= 0, nx < maxWidth, ny < maxHeight, not (nx == x && ny == y)]
 
+
 -- Update a cell in the board.
 updateCell :: Int -> Int -> (Cell -> Cell) -> Board -> Board
 updateCell x y f brd =
   let (beforeRows, targetRow:afterRows) = splitAt y brd
       (beforeCells, targetCell:afterCells) = splitAt x targetRow
       newCell = f targetCell
-  in beforeRows ++ [beforeCells ++ newCell : afterCells] ++ afterRows
+  in beforeRows ++ [beforeCells ++ (newCell : afterCells)] ++ afterRows
+
 
 -- Print the game board to the console with row and column indices.
 printBoard :: Board -> IO ()
