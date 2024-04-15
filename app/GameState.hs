@@ -125,14 +125,21 @@ toggleFlag :: (Int, Int) -> GameState -> GameState
 toggleFlag (x, y) gameState@(GameState brd status) =
   case safeGetCell brd (x, y) of
     Just cell ->
-      if isFlagged cell
-        then gameState {board = updateCell x y (\cell -> cell {isFlagged = False}) brd}
-        else gameState {board = updateCell x y (\cell -> cell {isFlagged = True}) brd}
-    Nothing -> gameState
+      if not (isRevealed cell) -- Check if the cell is not revealed
+        then
+          let newBoard = updateCell x y toggleFlagState brd
+           in gameState {board = newBoard}
+        else gameState -- If the cell is revealed, do not change the state
+    Nothing -> gameState -- If the cell is out of bounds, do not change the state
+  where
+    toggleFlagState cell = cell {isFlagged = not (isFlagged cell)}
 
 -- Function to check if the game is won
 isGameWon :: GameState -> Bool
 isGameWon (GameState brd _) =
-  all cellRevealedOrMine brd
+  all cellsCorrect brd
   where
-    cellRevealedOrMine = all (\cell -> isRevealed cell || isMine cell)
+    cellsCorrect row = all cellCorrect row -- Check every cell in each row
+    cellCorrect cell
+      | isMine cell = not (isRevealed cell) || isFlagged cell -- Mines should not be revealed or should be flagged
+      | otherwise = isRevealed cell -- Non-mines should be revealed
