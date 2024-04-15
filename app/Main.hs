@@ -1,8 +1,8 @@
 module Main where
 
-import System.Random
-import Data.List (intersperse)
-import Text.Read (readMaybe)
+import System.Random ()
+import Data.List ()
+import Text.Read ()
 
 import Board
 import GameState
