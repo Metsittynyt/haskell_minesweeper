@@ -4,7 +4,6 @@ import System.Random ()
 import Data.List ()
 import Text.Read ()
 import Graphics.Gloss.Interface.IO.Game
-import System.Exit (exitSuccess)
 
 
 import Board ()
