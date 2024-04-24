@@ -19,7 +19,7 @@ data GameState = GameState
     elapsedTime :: Float
   }
 
-data GameStatus = Ongoing | Won | Lost | Paused | Exiting deriving (Show, Eq)
+data GameStatus = Ongoing | Won | Lost | Paused deriving (Show, Eq)
 
 -- Initial game state setup
 initialGameState :: IO GameState

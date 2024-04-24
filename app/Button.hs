@@ -7,8 +7,9 @@ module Button
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import GameState (GameState(..), GameStatus(..))
+import System.Exit (exitSuccess)
 
--- Define a button type that allows IO actions
+-- Define a button
 data Button = Button {
     buttonText   :: String,
     buttonPos    :: Point,
@@ -59,10 +60,10 @@ handleEvent (mx, my) (Button _ (px, py) (width, height) action) accGs =
     then action =<< accGs
     else accGs
 
--- Define button actions that involve IO
+-- Define button actions
+-- Toggle pause
 togglePause :: GameState -> IO GameState
 togglePause gs = do
-    putStrLn "Pause toggled"  -- Example of adding a side effect
     return gs { gameStatus = if gameStatus gs == Paused then Ongoing else Paused }
 
 resetGame :: GameState -> IO GameState
@@ -72,5 +73,4 @@ resetGame gs = do
 
 exitGame :: GameState -> IO GameState
 exitGame gs = do
-    putStrLn "Exit pressed"
-    return gs
+    exitSuccess
