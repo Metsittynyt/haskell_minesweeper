@@ -4,7 +4,6 @@ module GameState
     initialGameState,
     revealCell,
     isGameWon,
-    drawGame,
     handleEvent,
     updateGame,
   )
@@ -13,7 +12,6 @@ where
 import Board
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
-import Numeric (showFFloat)
 import Input
 
 data GameState = GameState
@@ -34,57 +32,6 @@ initialGameState = do
         gameStatus = Ongoing,
         elapsedTime = 0  -- Start the timer at 0
     }
-
-
-
-drawGame :: GameState -> IO Picture
-drawGame gameState = return $
-    pictures [
-      translate (-144) (-144) $  -- Adjust the translation to center the board
-        scale 32 32 $            -- Scale each cell to 32x32 pixels
-          pictures [
-            case safeGetCell (board gameState) (x, 9 - y) of
-              Just cell ->
-                translate (fromIntegral x) (fromIntegral y) $
-                  pictures [
-                    color (chooseColor cell) $ rectangleSolid 0.9 0.9,  -- Draw the cell background
-                    drawCellText cell  -- Draw the number of adjacent mines or flag
-                  ]
-              Nothing -> blank  -- if the cell is out of bounds, draw nothing
-            | x <- [0 .. 9], y <- [0 .. 9]
-          ],
-      drawTimer (elapsedTime gameState)  -- Draw the timer
-    ]
-
--- Function to render the timer
-drawTimer :: Float -> Picture
-drawTimer time =
-    translate (-144) 200 $  -- Position the timer above the board
-    scale 0.2 0.2 $    -- Scale the text to an appropriate size
-    color black $      -- Set the text color to black
-    text $ "Time: " ++ showFFloat (Just 1) time "s"  -- Format the time with one decimal place
-
--- Function to draw the number of adjacent mines on the cell
-drawCellText :: Cell -> Picture
-drawCellText cell
-  | isRevealed cell && not (isMine cell) && adjacentMines cell > 0 =
-      translate (-0.2) (-0.2) $ -- Adjust translation to center the text in the cell
-        scale 0.005 0.005 $ -- Adjust scaling to fit the text size
-          color black $ -- Set text color to black
-            text (show $ adjacentMines cell) -- Convert the number of adjacent mines to text
-  | otherwise = blank
-
-chooseColor :: Cell -> Color
-chooseColor cell
-  | isRevealed cell =
-      if isMine cell
-        then red
-        else
-          if isFlagged cell
-            then yellow
-            else greyN 0.5
-  | isFlagged cell = orange
-  | otherwise = greyN 0.8
 
 handleEvent :: Event -> GameState -> IO GameState
 handleEvent event gameState = case event of
