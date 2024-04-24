@@ -4,12 +4,13 @@ import Graphics.Gloss
 import Numeric (showFFloat)
 import GameState (GameState(..), GameStatus(..))
 import Board (Cell(..), isMine, isRevealed, adjacentMines, safeGetCell)
+import Button (drawButtons)
 
 -- Function to render the game state
 drawGame :: GameState -> IO Picture
 drawGame gameState = return $
     pictures [
-      translate (-144) (-144) $  -- Adjust the translation to center the board
+      translate (-144) (-194) $  -- Adjust the translation to center the board
         scale 32 32 $            -- Scale each cell to 32x32 pixels
           pictures [
             case safeGetCell (board gameState) (x, 9 - y) of
@@ -22,16 +23,18 @@ drawGame gameState = return $
               Nothing -> blank
             | x <- [0 .. 9], y <- [0 .. 9]
           ],
-      drawTimer (elapsedTime gameState)
+      drawTimer (elapsedTime gameState),
+      drawButtons gameState
     ]
 
 -- Function to render the timer
 drawTimer :: Float -> Picture
 drawTimer time =
-    translate (-144) 200 $
-    scale 0.2 0.2 $
+    translate (-160) 160 $
+    scale 0.15 0.15 $
     color black $
     text $ "Time: " ++ showFFloat (Just 1) time "s"  -- Correctly format the floating point number
+
 
 -- Helper functions for drawing specific parts of a cell
 drawCellText :: Cell -> Picture
