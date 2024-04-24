@@ -5,8 +5,7 @@ module GameState
     revealCell,
     isGameWon,
     handleEvent,
-    updateGame,
-  )
+    updateGame)
 where
 
 import Board
@@ -20,21 +19,27 @@ data GameState = GameState
     elapsedTime :: Float
   }
 
-data GameStatus = Ongoing | Won | Lost deriving (Show, Eq)
+data GameStatus = Ongoing | Won | Lost | Paused | Exiting deriving (Show, Eq)
 
+-- Initial game state setup
 initialGameState :: IO GameState
 initialGameState = do
-    let initialBoard = initBoard 10 10  -- Correctly initialize a 10x10 board
+    let initialBoard = initBoard 10 10  -- Initialize a 10x10 board
     minedBoard <- placeMines initialBoard 10  -- Place 10 mines
-    let finalBoard = calculateAdjacency minedBoard
+    let finalBoard = calculateAdjacency minedBoard  -- Calculate adjacency
     return GameState {
         board = finalBoard,
         gameStatus = Ongoing,
-        elapsedTime = 0  -- Start the timer at 0
+        elapsedTime = 0
     }
 
+
 handleEvent :: Event -> GameState -> IO GameState
-handleEvent event gameState = case event of
+handleEvent event gameState@(GameState brd status elapsedTime) = case event of
+  -- Handle the pause/resume toggle
+  EventKey (Char 'p') Down _ _ ->  -- Assuming pressing 'p' will pause/resume the game
+    return $ gameState { gameStatus = if status == Paused then Ongoing else Paused }
+
   -- Handle left mouse button click (reveal cell).
   EventKey (MouseButton LeftButton) Down _ mousePos -> do
     let (col, row) = convertMouseCoords mousePos
@@ -61,16 +66,17 @@ convertMouseCoords (x, y) =
 -- Function to convert the screen coordinates of the mouse to grid coordinates
 invertMouseCoordinates :: Point -> (Float, Float)
 invertMouseCoordinates (screenX, screenY) =
-  let (gridX, gridY) = (screenX + 160, 160 - screenY)
+  let (gridX, gridY) = (screenX + 160, 110 - screenY)
    in (gridX / cellSize, gridY / cellSize)
   where
     cellSize = 32 -- Size of each cell
 
+-- Update the game state over time
 updateGame :: Float -> GameState -> IO GameState
 updateGame timeStep gameState@(GameState brd status elapsedTime) =
-    return $ if status == Ongoing
-             then gameState { elapsedTime = elapsedTime + timeStep }
-             else gameState -- Do not update time if the game is won or lost
+  return $ case status of
+    Ongoing -> gameState { elapsedTime = elapsedTime + timeStep }
+    _ -> gameState  -- Do not update time if paused, won, lost, or exiting
 
 
 -- Function to reveal cell and do possible flood fill
