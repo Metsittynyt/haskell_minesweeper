@@ -33,9 +33,22 @@ initialGameState = do
         elapsedTime = 0
     }
 
-
 handleEvent :: Event -> GameState -> IO GameState
-handleEvent event gameState@(GameState brd status elapsedTime) = case event of
+handleEvent event gameState@(GameState board status elapsedTime) =
+    case status of
+        Paused -> handlePausedState event gameState
+        _      -> handleActiveState event gameState
+
+handlePausedState :: Event -> GameState -> IO GameState
+handlePausedState event gameState@(GameState _ _ _) =
+    case event of
+        -- Example: Handle 'p' key to toggle pause
+        EventKey (Char 'p') Down _ _ -> return $ gameState { gameStatus = Ongoing }
+        _ -> return gameState  -- Ignore all other events
+
+
+handleActiveState  :: Event -> GameState -> IO GameState
+handleActiveState  event gameState@(GameState brd status elapsedTime) = case event of
   -- Handle the pause/resume toggle
   EventKey (Char 'p') Down _ _ ->  -- Assuming pressing 'p' will pause/resume the game
     return $ gameState { gameStatus = if status == Paused then Ongoing else Paused }
