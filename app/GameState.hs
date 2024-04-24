@@ -33,24 +33,26 @@ initialGameState = do
         elapsedTime = 0
     }
 
+-- Handle events and proceed accordingly
 handleEvent :: Event -> GameState -> IO GameState
 handleEvent event gameState@(GameState board status elapsedTime) =
     case status of
         Paused -> handlePausedState event gameState
         _      -> handleActiveState event gameState
 
+-- When game is paused
 handlePausedState :: Event -> GameState -> IO GameState
 handlePausedState event gameState@(GameState _ _ _) =
     case event of
-        -- Example: Handle 'p' key to toggle pause
+        -- Handle 'p' key to toggle pause
         EventKey (Char 'p') Down _ _ -> return $ gameState { gameStatus = Ongoing }
         _ -> return gameState  -- Ignore all other events
 
-
+-- When game is active
 handleActiveState  :: Event -> GameState -> IO GameState
 handleActiveState  event gameState@(GameState brd status elapsedTime) = case event of
   -- Handle the pause/resume toggle
-  EventKey (Char 'p') Down _ _ ->  -- Assuming pressing 'p' will pause/resume the game
+  EventKey (Char 'p') Down _ _ ->  -- Pressing 'p' will pause/resume the game
     return $ gameState { gameStatus = if status == Paused then Ongoing else Paused }
 
   -- Handle left mouse button click (reveal cell).
