@@ -7,7 +7,8 @@ import Graphics.Gloss.Interface.IO.Game
 
 import Board ()
 import GameState
-    ( drawGame, handleEvent, initialGameState, updateGame )
+    ( initialGameState, handleEvent, updateGame )
+import Draw (drawGame)
 import Input ()
 
 
