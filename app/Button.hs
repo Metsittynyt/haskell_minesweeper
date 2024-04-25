@@ -6,7 +6,7 @@ module Button
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
-import GameState (GameState(..), GameStatus(..))
+import GameState (GameState(..), GameStatus(..), initialGameState)
 import System.Exit (exitSuccess)
 
 -- Define a button
@@ -68,8 +68,8 @@ togglePause gs = do
 
 resetGame :: GameState -> IO GameState
 resetGame gs = do
-    putStrLn "Reset pressed"
-    return gs
+    newGameState <- initialGameState  -- Initialize a new game state
+    return newGameState
 
 exitGame :: GameState -> IO GameState
 exitGame gs = do
