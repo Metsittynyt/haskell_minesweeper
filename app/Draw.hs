@@ -24,7 +24,8 @@ drawGame gameState = return $
             | x <- [0 .. 9], y <- [0 .. 9]
           ],
       drawTimer (elapsedTime gameState),
-      drawButtons gameState
+      drawButtons gameState,
+      drawGameStatusMessage gameState
     ]
 
 -- Function to render the timer
@@ -52,3 +53,10 @@ chooseColor cell
   | isFlagged cell = orange
   | otherwise = greyN 0.8
 
+drawGameStatusMessage :: GameState -> Picture
+drawGameStatusMessage gameState =
+    if gameStatus gameState == Lost
+    then translate (-60) 120 $ scale 0.15 0.15 $ color red $ text "Game Over!"
+    else if gameStatus gameState == Won
+         then translate (-60) 120 $ scale 0.15 0.15 $ color orange $ text "You won!"
+         else blank  -- Return blank if neither condition is met
