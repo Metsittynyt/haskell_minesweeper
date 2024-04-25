@@ -29,7 +29,7 @@ initialGameState = do
     let finalBoard = calculateAdjacency minedBoard  -- Calculate adjacency
     return GameState {
         board = finalBoard,
-        gameStatus = Ongoing,
+        gameStatus = Paused,
         elapsedTime = 0
     }
 
