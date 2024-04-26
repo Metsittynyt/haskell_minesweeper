@@ -1,10 +1,12 @@
-module Draw where
+module DrawGame where
 
 import Graphics.Gloss
+import Button (Button(..), drawButtons)
 import Numeric (showFFloat)
-import GameState (GameState(..), GameStatus(..))
+import GameState (GameState(..), GameStatus(..), GameScreen(..))
 import Board (Cell(..), isMine, isRevealed, adjacentMines, safeGetCell)
-import Button (drawButtons)
+import System.Exit (exitSuccess)
+
 
 -- Function to render the game state
 drawGame :: GameState -> IO Picture
@@ -23,18 +25,19 @@ drawGame gameState = return $
               Nothing -> blank
             | x <- [0 .. 9], y <- [0 .. 9]
           ],
-      drawTimer (elapsedTime gameState),
-      drawButtons gameState,
+      drawTimer gameState (elapsedTime gameState),
+      drawButtons gameState gameButtons,
       drawGameStatusMessage gameState
     ]
 
+
 -- Function to render the timer
-drawTimer :: Float -> Picture
-drawTimer time =
+drawTimer :: GameState -> Float -> Picture
+drawTimer gameState time =
     translate (-160) 160 $
     scale 0.15 0.15 $
     color black $
-    text $ "Time: " ++ showFFloat (Just 1) time "s"  -- Correctly format the floating point number
+    text $ "Time: " ++ showFFloat (Just 1) time "s"
 
 
 -- Helper functions for drawing specific parts of a cell
@@ -53,10 +56,38 @@ chooseColor cell
   | isFlagged cell = orange
   | otherwise = greyN 0.8
 
+
+-- Draw 'game over' and 'you win' messages
 drawGameStatusMessage :: GameState -> Picture
-drawGameStatusMessage gameState =
-    if gameStatus gameState == Lost
-    then translate (-60) 120 $ scale 0.15 0.15 $ color red $ text "Game Over!"
-    else if gameStatus gameState == Won
-         then translate (-60) 120 $ scale 0.15 0.15 $ color orange $ text "You won!"
-         else blank  -- Return blank if neither condition is met
+drawGameStatusMessage gameState
+  | gameStatus gameState == Lost = translate (-60) 120 $ scale 0.15 0.15 $ color red $ text "Game Over!"
+  | gameStatus gameState == Won = translate (-60) 120 $ scale 0.15 0.15 $ color orange $ text "You won!"
+  | otherwise = blank  -- Return blank if neither condition is met
+
+
+-- Define buttons for the game screen
+gameButtons :: [Button]
+gameButtons = [
+    Button "New Game" (-110, 220) (100, 40) (const orange) backToMenu,
+    Button "Pause" (0, 220) (100, 40) (const orange) togglePause,
+    Button "Exit" (110, 220) (100, 40) (const orange) exitGame
+    ]
+
+
+-- Back to menu
+backToMenu :: GameState -> IO GameState
+backToMenu gs = do
+  putStrLn "Back to menu..."
+  return gs { gameScreen = Menu}
+
+-- Function to toggle pause
+togglePause :: GameState -> IO GameState
+togglePause gs = do
+  putStrLn "Toggle pause..."
+  return gs { gameStatus = if gameStatus gs == Paused then Playing else Paused }
+
+-- Exit game
+exitGame :: GameState -> IO GameState
+exitGame gs = do
+  putStrLn "Exiting game..."
+  exitSuccess
