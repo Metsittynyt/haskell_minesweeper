@@ -6,38 +6,38 @@ import Numeric (showFFloat)
 import GameState (GameState(..), GameStatus(..), GameScreen(..))
 import Board (Cell(..), isMine, isRevealed, adjacentMines, safeGetCell)
 import System.Exit (exitSuccess)
+import Debug.Trace
 
 
 -- Function to render the game state
 drawGame :: GameState -> IO Picture
 drawGame gameState = return $
     pictures [
-      translate (-144) (-194) $  -- Adjust the translation to center the board
-        scale 32 32 $            -- Scale each cell to 32x32 pixels
-          pictures [
-            case safeGetCell (board gameState) (x, 9 - y) of
-              Just cell ->
-                translate (fromIntegral x) (fromIntegral y) $
-                  pictures [
-                    color (chooseColor cell) $ rectangleSolid 0.9 0.9,
-                    drawCellText cell
-                  ]
-              Nothing -> blank
-            | x <- [0 .. 9], y <- [0 .. 9]
-          ],
+      drawBoard gameState,
       drawTimer gameState (elapsedTime gameState),
       drawButtons gameState gameButtons,
       drawGameStatusMessage gameState
     ]
 
-
--- Function to render the timer
-drawTimer :: GameState -> Float -> Picture
-drawTimer gameState time =
-    translate (-160) 160 $
-    scale 0.15 0.15 $
-    color black $
-    text $ "Time: " ++ showFFloat (Just 1) time "s"
+-- Draw board
+drawBoard :: GameState -> Picture
+drawBoard gameState =
+  let cellSize' = fromIntegral (cellSize gameState)
+      xOffset = - ((fromIntegral (numCols gameState) * cellSize' / 2) - cellSize' / 2)
+      yOffset = - (50 + (fromIntegral (numRows gameState) * cellSize' / 2) - cellSize' / 2)
+  in translate xOffset yOffset $
+       scale cellSize' cellSize' $
+         pictures [
+            case safeGetCell (board gameState) (x, y) of
+                Just cell ->
+                    translate (fromIntegral x) (fromIntegral (numRows gameState - 1 - y)) $
+                        pictures [
+                            color (chooseColor cell) $ rectangleSolid 0.9 0.9,
+                            drawCellText cell
+                        ]
+                Nothing -> blank
+            | x <- [0 .. numCols gameState - 1], y <- [0 .. numRows gameState - 1]
+        ]
 
 
 -- Helper functions for drawing specific parts of a cell
@@ -56,6 +56,13 @@ chooseColor cell
   | isFlagged cell = orange
   | otherwise = greyN 0.8
 
+-- Function to render the timer
+drawTimer :: GameState -> Float -> Picture
+drawTimer gameState time =
+    translate (-160) 160 $
+    scale 0.15 0.15 $
+    color black $
+    text $ "Time: " ++ showFFloat (Just 1) time "s"
 
 -- Draw 'game over' and 'you win' messages
 drawGameStatusMessage :: GameState -> Picture
