@@ -5,19 +5,14 @@ import Data.List ()
 import Text.Read ()
 import Graphics.Gloss.Interface.IO.Game
 
-
-import Board ()
 import GameState
-    ( GameState, initialGameState, updateGame, handleEvent )  -- Import GameState type here
-import Input ()
-import Draw (drawGame)
-import Button (drawButtons, handleButtonEvent)
+import DrawGame
+import DrawMenu
+import Button
 
-
--- Main function
 main :: IO ()
 main = do
-    -- Initiate the game state.
+    -- Initiate the game state, starting with the menu.
     gameState <- initialGameState
 
     -- Setup the display window
@@ -27,15 +22,22 @@ main = do
     -- Run the game using playIO from Gloss
     playIO window white 30 gameState drawAll handleAllEvents updateGame
 
--- Drawing function that combines game and button graphics
+-- Drawing function that adapts based on game status
 drawAll :: GameState -> IO Picture
-drawAll gameState = do
-  gamePic <- drawGame gameState  -- Draw the game state
-  let buttonPics = drawButtons gameState  -- Draw buttons from Button.hs
-  return $ pictures [gamePic, buttonPics]
+drawAll gameState =
+    case gameScreen gameState of
+        Menu -> drawMenu gameState
+        Game -> drawGame gameState
+
 
 -- Handling all game events, including button interactions
 handleAllEvents :: Event -> GameState -> IO GameState
-handleAllEvents event gameState = do
-  gameState' <- handleButtonEvent event gameState  -- First handle button events
-  handleEvent event gameState'  -- Then handle general game events
+handleAllEvents event gameState = case gameScreen gameState of
+    Menu -> do
+        gameState' <- handleButtonEvent event gameState menuButtons
+        handleEvent event gameState'
+    Game -> do
+        gameState' <- handleButtonEvent event gameState gameButtons
+        handleEvent event gameState'
+    _ -> return gameState
+
