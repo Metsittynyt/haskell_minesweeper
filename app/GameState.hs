@@ -1,12 +1,15 @@
 module GameState
-  ( GameState (..),
-    GameStatus (..),
-    initialGameState,
-    revealCell,
-    isGameWon,
-    handleEvent,
-    updateGame)
+    ( GameState (..),
+      GameStatus (..),
+      GameScreen(..),
+      initialGameState,
+      initializeGame,
+      revealCell,
+      isGameWon,
+      handleEvent,
+      updateGame,)
 where
+
 
 import Board
 import Graphics.Gloss
@@ -16,44 +19,61 @@ import Input
 data GameState = GameState
   { board :: Board,
     gameStatus :: GameStatus,
+    gameScreen :: GameScreen,
     elapsedTime :: Float
   }
 
-data GameStatus = Ongoing | Won | Lost | Paused deriving (Show, Eq)
+data GameStatus = Playing | Won | Lost | Paused  deriving (Show, Eq)
+data GameScreen = Menu | Game deriving (Show, Eq)
 
 -- Initial game state setup
 initialGameState :: IO GameState
-initialGameState = do
-    let initialBoard = initBoard 10 10  -- Initialize a 10x10 board
-    minedBoard <- placeMines initialBoard 10  -- Place 10 mines
-    let finalBoard = calculateAdjacency minedBoard  -- Calculate adjacency
+initialGameState = return $ GameState {
+  board = [],
+  gameStatus = Paused,
+  gameScreen = Menu,
+  elapsedTime = 0
+}
+
+-- Initialize game
+initializeGame :: IO GameState
+initializeGame = do
+    putStrLn "Initializing new game..."
+    let initialBoard = initBoard 10 10
+    minedBoard <- placeMines initialBoard 10
+    let finalBoard = calculateAdjacency minedBoard
     return GameState {
         board = finalBoard,
-        gameStatus = Paused,
+        gameStatus = Playing,
+        gameScreen = Game,
         elapsedTime = 0
     }
 
+
+
 -- Handle events and proceed accordingly
 handleEvent :: Event -> GameState -> IO GameState
-handleEvent event gameState@(GameState board status elapsedTime) =
+handleEvent event gameState@(GameState board status screen elapsedTime) =
     case status of
         Paused -> handlePausedState event gameState
         _      -> handleActiveState event gameState
 
 -- When game is paused
 handlePausedState :: Event -> GameState -> IO GameState
-handlePausedState event gameState@(GameState _ _ _) =
-    case event of
-        -- Handle 'p' key to toggle pause
-        EventKey (Char 'p') Down _ _ -> return $ gameState { gameStatus = Ongoing }
-        _ -> return gameState  -- Ignore all other events
+handlePausedState event gameState@(GameState _ _ screen _) =
+    case (event, screen) of
+        (EventKey (Char 'p') Down _ _, _) -> 
+            return $ gameState { gameStatus = if gameStatus gameState == Paused then Playing else Paused }
+        (EventKey (Char 'e') Down _ _, Menu) -> initializeGame
+        _ -> return gameState
+
 
 -- When game is active
 handleActiveState  :: Event -> GameState -> IO GameState
-handleActiveState  event gameState@(GameState brd status elapsedTime) = case event of
+handleActiveState  event gameState@(GameState brd status screen elapsedTime) = case event of
   -- Handle the pause/resume toggle
   EventKey (Char 'p') Down _ _ ->  -- Pressing 'p' will pause/resume the game
-    return $ gameState { gameStatus = if status == Paused then Ongoing else Paused }
+    return $ gameState { gameStatus = if status == Paused then Playing else Paused }
 
   -- Handle left mouse button click (reveal cell).
   EventKey (MouseButton LeftButton) Down _ mousePos -> do
@@ -88,15 +108,15 @@ invertMouseCoordinates (screenX, screenY) =
 
 -- Update the game state over time
 updateGame :: Float -> GameState -> IO GameState
-updateGame timeStep gameState@(GameState brd status elapsedTime) =
+updateGame timeStep gameState@(GameState brd status screen elapsedTime) =
   return $ case status of
-    Ongoing -> gameState { elapsedTime = elapsedTime + timeStep }
+    Playing -> gameState { elapsedTime = elapsedTime + timeStep }
     _ -> gameState  -- Do not update time if paused, won, lost, or exiting
 
 
 -- Function to reveal cell and do possible flood fill
 revealCell :: (Int, Int) -> GameState -> GameState
-revealCell coords@(x, y) gameState@(GameState brd status elapsedTime) =
+revealCell coords@(x, y) gameState@(GameState brd status screen elapsedTime) =
   case safeGetCell brd coords of
     Just cell -> if isRevealed cell
                  then gameState  -- No action needed if already revealed.
@@ -118,7 +138,7 @@ revealCell coords@(x, y) gameState@(GameState brd status elapsedTime) =
 
 
 toggleFlag :: (Int, Int) -> GameState -> GameState
-toggleFlag (x, y) gameState@(GameState brd status elapsedTime) =
+toggleFlag (x, y) gameState@(GameState brd status screen elapsedTime) =
   case safeGetCell brd (x, y) of
     Just cell ->
       if not (isRevealed cell) -- Check if the cell is not revealed
@@ -132,10 +152,10 @@ toggleFlag (x, y) gameState@(GameState brd status elapsedTime) =
 
 -- Function to check if the game is won
 isGameWon :: GameState -> Bool
-isGameWon (GameState brd _ elapsedTime) =
+isGameWon (GameState brd _ _ elapsedTime) =
   all cellsCorrect brd
   where
-    cellsCorrect row = all cellCorrect row -- Check every cell in each row
+    cellsCorrect = all cellCorrect  -- Check every cell in each row
     cellCorrect cell
       | isMine cell = not (isRevealed cell) || isFlagged cell -- Mines should not be revealed or should be flagged
       | otherwise = isRevealed cell -- Non-mines should be revealed
