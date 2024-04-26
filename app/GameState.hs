@@ -44,8 +44,8 @@ initialGameState = do
   let finalBoard = calculateAdjacency minedBoard
   return GameState {
       board = finalBoard,
-  gameStatus = Paused,
-  gameScreen = Menu,
+      gameStatus = Paused,
+      gameScreen = Menu,
       elapsedTime = 0,
       numRows = rows,
       numCols = cols,
@@ -119,18 +119,28 @@ handleActiveState event gameState@(GameState brd status screen elapsedTime _ _ _
 
 
 -- Helper function to convert screen coordinates to grid coordinates
-convertMouseCoords :: Point -> (Int, Int)
-convertMouseCoords (x, y) =
-  let (gridX, gridY) = invertMouseCoordinates (x, y)
+convertMouseCoords :: GameState -> Point -> (Int, Int)
+convertMouseCoords gameState (x, y) =
+  let (gridX, gridY) = invertMouseCoordinates gameState (x, y)
    in (floor gridX, floor gridY)
 
 -- Function to convert the screen coordinates of the mouse to grid coordinates
-invertMouseCoordinates :: Point -> (Float, Float)
-invertMouseCoordinates (screenX, screenY) =
-  let (gridX, gridY) = (screenX + 160, 110 - screenY)
-   in (gridX / cellSize, gridY / cellSize)
-  where
-    cellSize = 32 -- Size of each cell
+invertMouseCoordinates :: GameState -> Point -> (Float, Float)
+invertMouseCoordinates gameState (screenX, screenY) =
+  let (xOffset, yOffset) = calculateOffsets gameState
+      (gridX, gridY) = (screenX + xOffset, yOffset - screenY)
+   in (gridX / fromIntegral (cellSize gameState), gridY / fromIntegral (cellSize gameState))
+
+-- Function to calculate the offsets for drawing the board
+-- Calculate offsets for centering the board on the screen
+calculateOffsets :: GameState -> (Float, Float)
+calculateOffsets gameState =
+  let cellSize' = fromIntegral (cellSize gameState)
+      xOffset = (fromIntegral (numCols gameState) * cellSize') / 2
+      yOffset = ((fromIntegral (numRows gameState) * cellSize') / 2 ) - 50
+  in (xOffset, yOffset)
+
+
 
 -- Update the game state over time
 updateGame :: Float -> GameState -> IO GameState
@@ -156,7 +166,7 @@ revealCell coords@(x, y) gameState@(GameState brd  _ _ _ _ _ _ _ _ _) =
                    in if isMine cell
                       then newState { gameStatus = Lost }  -- Game is lost if a mine is revealed.
                       else if adjacentMines cell == 0
-                           then let adjCoords = adjacentCoords coords (length brd) (length $ head brd)
+                           then let adjCoords = adjacentCoords coords (length $ head brd) (length brd)
                                     recursivelyRevealedState = foldl (flip revealCell) newState adjCoords
                                 in if isGameWon recursivelyRevealedState
                                    then recursivelyRevealedState { gameStatus = Won }  -- Check if game is won.
