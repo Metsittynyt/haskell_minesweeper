@@ -12,7 +12,7 @@ drawMenu gameState = return $
     pictures [
         translate (-60) 200 $ scale 0.15 0.15 $ color black $ text "Minesweeper",
         drawButtons gameState (menuButtons ++ paramButtons),
-       drawParameters gameState 
+        drawParameters gameState 
     ]
 
 -- Define buttons for the menu screen
@@ -50,9 +50,11 @@ paramButtons = [
 -- Function to start a new game
 startGame :: GameState -> IO GameState
 startGame gs = do
-    putStrLn "Starting a new game..."
-    newGameState <- initializeGame
-    return gs { gameScreen = Game}
+  putStrLn "Starting a new game..."
+  newGameState <- initializeGame gs
+  return newGameState { gameScreen = Game }
+
+
 
 -- Function to exit the game
 exitGame :: GameState -> IO GameState
@@ -60,11 +62,10 @@ exitGame gs = do
     putStrLn "Exiting game..."
     exitSuccess
 
--- Draw changeable parameters
-drawParameters :: GameState -> Picture
-drawParameters gameState =
-    pictures
-        [ translate (-90) 140 $ scale 0.125 0.125 $ color black $ text "Number of mines: "
-        , translate (-90) 80 $ scale 0.125 0.125 $ color black $ text "Number of rows: "
-        , translate (-90) 20 $ scale 0.125 0.125 $ color black $ text "Number of columns: "
-        ]
+-- Function to adjust parameters
+adjustParams :: GameState -> String -> Int -> GameState
+adjustParams gs param delta = case param of
+    "rows" -> gs { numRows = min 20 $ max 10 (numRows gs + delta) }
+    "cols" -> gs { numCols = min 20 $ max 10 (numCols gs + delta) }
+    "mines" -> gs { numMines = min 20 $ max 10 (numMines gs + delta) }
+    _ -> gs
