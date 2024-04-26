@@ -113,6 +113,10 @@ updateGame timeStep gameState@(GameState brd status screen elapsedTime) =
     Playing -> gameState { elapsedTime = elapsedTime + timeStep }
     _ -> gameState  -- Do not update time if paused, won, lost, or exiting
 
+-- Validates if the provided move is within the bounds of the board
+isValidMove :: Board -> (Int, Int) -> Bool
+isValidMove board (x, y) = 
+  y >= 0 && y < length board && x >= 0 && x < length (head board)
 
 -- Function to reveal cell and do possible flood fill
 revealCell :: (Int, Int) -> GameState -> GameState
