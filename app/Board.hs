@@ -4,6 +4,7 @@ module Board (
     initBoard,
     placeMines,
     calculateAdjacency,
+    calculateCellSize,
     adjacentCoords,
     printBoard,
     isCellRevealed,
@@ -55,6 +56,14 @@ calculateAdjacency brd = [[ calculateCellAdjacency x y brd | x <- [0..width-1]] 
           -- Use map and catMaybes to safely count mines without fromJust
           mineCount = length . filter id . catMaybes $ map (isMineCell board) adjCells
       in cell { adjacentMines = mineCount }
+
+-- Calculate the appropriate cell size based on the window dimensions and the number of rows and columns.
+calculateCellSize :: Int -> Int -> Int -> Int -> Float
+calculateCellSize windowWidth windowHeight numRows numCols =
+    let sizeByRows = fromIntegral (windowHeight - 2 * 40 - 100) / fromIntegral numRows
+        sizeByCols = fromIntegral (windowWidth - 2 * 40) / fromIntegral numCols
+        maxSize = min sizeByRows sizeByCols
+    in if maxSize > 32 then 32 else max maxSize 16
 
 -- Helper function to check if a cell at given coords is a mine, safely.
 isMineCell :: Board -> (Int, Int) -> Maybe Bool
