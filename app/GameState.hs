@@ -14,70 +14,95 @@ where
 import Board
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
-import Input
 
 data GameState = GameState
   { board :: Board,
     gameStatus :: GameStatus,
     gameScreen :: GameScreen,
-    elapsedTime :: Float
+    elapsedTime :: Float,
+    numRows :: Int,
+    numCols :: Int,
+    numMines :: Int,
+    cellSize :: Int,
+    windowWidth :: Int,
+    windowHeight :: Int
   }
 
 data GameStatus = Playing | Won | Lost | Paused  deriving (Show, Eq)
 data GameScreen = Menu | Game deriving (Show, Eq)
 
--- Initial game state setup
+-- Default game state setup
 initialGameState :: IO GameState
-initialGameState = return $ GameState {
-  board = [],
+initialGameState = do
+  putStrLn "Initialize default game..."
+  let rows = 10
+      cols = 10 
+      mines = 10
+      cell_Size = 32
+  let initialBoard = initBoard cols rows
+  minedBoard <- placeMines initialBoard mines
+  let finalBoard = calculateAdjacency minedBoard
+  return GameState {
+      board = finalBoard,
   gameStatus = Paused,
   gameScreen = Menu,
-  elapsedTime = 0
-}
+      elapsedTime = 0,
+      numRows = rows,
+      numCols = cols,
+      numMines = mines,
+      cellSize = cell_Size,
+      windowWidth = 400,
+      windowHeight = 500
+  }
 
--- Initialize game
-initializeGame :: IO GameState
-initializeGame = do
-    putStrLn "Initializing new game..."
-    let initialBoard = initBoard 10 10
-    minedBoard <- placeMines initialBoard 10
+-- Initialize game based on parameters
+initializeGame :: GameState -> IO GameState
+initializeGame gs = do
+    putStrLn $ "Initializing game with " ++ show (numRows gs) ++ " rows, " ++ show (numCols gs) ++ " cols, and " ++ show (numMines gs) ++ " mines."
+    let rows = numRows gs
+        cols = numCols gs
+        mines = numMines gs
+        ww = windowWidth gs
+        wh = windowHeight gs
+        cell_Size = floor $ calculateCellSize ww wh rows cols
+    let initialBoard = initBoard cols rows
+    minedBoard <- placeMines initialBoard mines
     let finalBoard = calculateAdjacency minedBoard
-    return GameState {
+    return gs {
         board = finalBoard,
-        gameStatus = Playing,
-        gameScreen = Game,
-        elapsedTime = 0
+        gameStatus = Paused,
+        elapsedTime = 0,
+        cellSize = cell_Size
     }
 
 
 
 -- Handle events and proceed accordingly
 handleEvent :: Event -> GameState -> IO GameState
-handleEvent event gameState@(GameState board status screen elapsedTime) =
+handleEvent event gameState@(GameState _ status _ _ _ _ _ _ _ _) =
     case status of
         Paused -> handlePausedState event gameState
         _      -> handleActiveState event gameState
 
 -- When game is paused
 handlePausedState :: Event -> GameState -> IO GameState
-handlePausedState event gameState@(GameState _ _ screen _) =
+handlePausedState event gameState@(GameState _ _ screen _ _ _ _ _ _ _) =
     case (event, screen) of
         (EventKey (Char 'p') Down _ _, _) -> 
             return $ gameState { gameStatus = if gameStatus gameState == Paused then Playing else Paused }
-        (EventKey (Char 'e') Down _ _, Menu) -> initializeGame
         _ -> return gameState
 
 
 -- When game is active
-handleActiveState  :: Event -> GameState -> IO GameState
-handleActiveState  event gameState@(GameState brd status screen elapsedTime) = case event of
+handleActiveState :: Event -> GameState -> IO GameState
+handleActiveState event gameState@(GameState brd status screen elapsedTime _ _ _ _ _ _) = case event of
   -- Handle the pause/resume toggle
   EventKey (Char 'p') Down _ _ ->  -- Pressing 'p' will pause/resume the game
     return $ gameState { gameStatus = if status == Paused then Playing else Paused }
 
   -- Handle left mouse button click (reveal cell).
   EventKey (MouseButton LeftButton) Down _ mousePos -> do
-    let (col, row) = convertMouseCoords mousePos
+    let (col, row) = convertMouseCoords gameState mousePos  -- Pass gameState here
     let validMove = isValidMove (board gameState) (col, row)
     if validMove
       then return $ revealCell (col, row) gameState
@@ -85,12 +110,13 @@ handleActiveState  event gameState@(GameState brd status screen elapsedTime) = c
 
   -- Handle right mouse button click (toggle flag).
   EventKey (MouseButton RightButton) Down _ mousePos -> do
-    let (col, row) = convertMouseCoords mousePos
+    let (col, row) = convertMouseCoords gameState mousePos  -- Pass gameState here
     let validMove = isValidMove (board gameState) (col, row)
     if validMove
       then return $ toggleFlag (col, row) gameState
       else return gameState -- Ignore if the move is invalid
   _ -> return gameState -- Handle other events
+
 
 -- Helper function to convert screen coordinates to grid coordinates
 convertMouseCoords :: Point -> (Int, Int)
@@ -108,7 +134,7 @@ invertMouseCoordinates (screenX, screenY) =
 
 -- Update the game state over time
 updateGame :: Float -> GameState -> IO GameState
-updateGame timeStep gameState@(GameState brd status screen elapsedTime) =
+updateGame timeStep gameState@(GameState brd status screen elapsedTime _ _ _ _ _ _) =
   return $ case status of
     Playing -> gameState { elapsedTime = elapsedTime + timeStep }
     _ -> gameState  -- Do not update time if paused, won, lost, or exiting
@@ -120,7 +146,7 @@ isValidMove board (x, y) =
 
 -- Function to reveal cell and do possible flood fill
 revealCell :: (Int, Int) -> GameState -> GameState
-revealCell coords@(x, y) gameState@(GameState brd status screen elapsedTime) =
+revealCell coords@(x, y) gameState@(GameState brd  _ _ _ _ _ _ _ _ _) =
   case safeGetCell brd coords of
     Just cell -> if isRevealed cell
                  then gameState  -- No action needed if already revealed.
@@ -140,9 +166,9 @@ revealCell coords@(x, y) gameState@(GameState brd status screen elapsedTime) =
                                 else newState
     Nothing -> gameState  -- Out of bounds, return state unchanged.
 
-
+-- Toggle flag
 toggleFlag :: (Int, Int) -> GameState -> GameState
-toggleFlag (x, y) gameState@(GameState brd status screen elapsedTime) =
+toggleFlag (x, y) gameState@(GameState brd  _ _ _ _ _ _ _ _ _) =
   case safeGetCell brd (x, y) of
     Just cell ->
       if not (isRevealed cell) -- Check if the cell is not revealed
@@ -156,7 +182,7 @@ toggleFlag (x, y) gameState@(GameState brd status screen elapsedTime) =
 
 -- Function to check if the game is won
 isGameWon :: GameState -> Bool
-isGameWon (GameState brd _ _ elapsedTime) =
+isGameWon (GameState brd _ _ _ _ _ _ _ _ _) =
   all cellsCorrect brd
   where
     cellsCorrect = all cellCorrect  -- Check every cell in each row
