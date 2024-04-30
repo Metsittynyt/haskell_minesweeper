@@ -95,7 +95,7 @@ handlePausedState event gameState@(GameState _ _ screen _ _ _ _ _ _ _) =
 
 -- When game is active
 handleActiveState :: Event -> GameState -> IO GameState
-handleActiveState event gameState@(GameState brd status screen elapsedTime _ _ _ _ _ _) = case event of
+handleActiveState event gameState@(GameState _ status _ _ _ _ _ _ _ _) = case event of
   -- Handle the pause/resume toggle
   EventKey (Char 'p') Down _ _ ->  -- Pressing 'p' will pause/resume the game
     return $ gameState { gameStatus = if status == Paused then Playing else Paused }
@@ -144,19 +144,20 @@ calculateOffsets gameState =
 
 -- Update the game state over time
 updateGame :: Float -> GameState -> IO GameState
-updateGame timeStep gameState@(GameState brd status screen elapsedTime _ _ _ _ _ _) =
-  return $ case status of
-    Playing -> gameState { elapsedTime = elapsedTime + timeStep }
-    _ -> gameState  -- Do not update time if paused, won, lost, or exiting
+updateGame timeStep gameState =
+  return $ case gameStatus gameState of
+    Playing -> gameState { elapsedTime = elapsedTime gameState + timeStep }
+    _ -> gameState
+
 
 -- Validates if the provided move is within the bounds of the board
 isValidMove :: Board -> (Int, Int) -> Bool
-isValidMove board (x, y) = 
-  y >= 0 && y < length board && x >= 0 && x < length (head board)
+isValidMove gameBoard (x, y) = 
+  y >= 0 && y < length gameBoard && x >= 0 && x < length (head gameBoard)
 
 -- Function to reveal cell and do possible flood fill
 revealCell :: (Int, Int) -> GameState -> GameState
-revealCell coords@(x, y) gameState@(GameState brd  _ _ _ _ _ _ _ _ _) =
+revealCell coords@(_, _) gameState@(GameState brd  _ _ _ _ _ _ _ _ _) =
   case safeGetCell brd coords of
     Just cell -> if isRevealed cell
                  then gameState  -- No action needed if already revealed.

@@ -58,10 +58,10 @@ chooseColor cell
 
 -- Function to render the timer
 drawTimer :: GameState -> Float -> Picture
-drawTimer gs time =
+drawTimer _ time =
     let minutes = floor (time / 60) :: Int  -- Calculate full minutes
         seconds = floor time `mod` 60 :: Int -- Calculate remaining seconds
-        millis = round ((time - fromIntegral (floor time)) * 1000) :: Int -- Calculate milliseconds
+        millis = round (time * 1000) `mod` 1000 :: Int -- Calculate milliseconds
         timeText = printf "%d:%02d.%03d" minutes seconds millis -- Format time as "M:SS.mmm"
     in translate (-160) 160 $
        scale 0.15 0.15 $
@@ -105,5 +105,5 @@ togglePause gs = case gameStatus gs of
 
 -- Exit game
 exitGame :: GameState -> IO GameState
-exitGame gs = do
+exitGame _ = do
   exitSuccess
