@@ -1,12 +1,12 @@
 module DrawGame where
 
 import Graphics.Gloss
+import System.Exit (exitSuccess)
+import Text.Printf (printf)
+
 import Button (Button(..), drawButtons)
-import Numeric (showFFloat)
 import GameState (GameState(..), GameStatus(..), GameScreen(..))
 import Board (Cell(..), isMine, isRevealed, adjacentMines, safeGetCell)
-import System.Exit (exitSuccess)
-import Debug.Trace
 
 
 -- Function to render the game state
@@ -58,11 +58,16 @@ chooseColor cell
 
 -- Function to render the timer
 drawTimer :: GameState -> Float -> Picture
-drawTimer gameState time =
-    translate (-160) 160 $
-    scale 0.15 0.15 $
-    color black $
-    text $ "Time: " ++ showFFloat (Just 1) time "s"
+drawTimer gs time =
+    let minutes = floor (time / 60) :: Int  -- Calculate full minutes
+        seconds = floor time `mod` 60 :: Int -- Calculate remaining seconds
+        millis = round ((time - fromIntegral (floor time)) * 1000) :: Int -- Calculate milliseconds
+        timeText = printf "%d:%02d.%03d" minutes seconds millis -- Format time as "M:SS.mmm"
+    in translate (-160) 160 $
+       scale 0.15 0.15 $
+       color black $
+       text $ "Time: " ++ timeText
+
 
 -- Draw 'game over' and 'you win' messages
 drawGameStatusMessage :: GameState -> Picture
@@ -76,25 +81,26 @@ drawGameStatusMessage gameState
 gameButtons :: [Button]
 gameButtons = [
     Button "New Game" (-110, 220) (100, 40) (const orange) backToMenu,
-    Button "Pause" (0, 220) (100, 40) (const orange) togglePause,
+    Button "Pause" (0, 220) (100, 40) pauseButtonColor togglePause,
     Button "Exit" (110, 220) (100, 40) (const orange) exitGame
     ]
 
+pauseButtonColor :: GameState -> Color
+pauseButtonColor gs = case gameStatus gs of
+    Paused -> greyN 0.5   -- Gray color when the game is paused
+    _      -> orange      -- Orange color when the game is active
 
 -- Back to menu
 backToMenu :: GameState -> IO GameState
 backToMenu gs = do
-  putStrLn "Back to menu..."
   return gs { gameScreen = Menu}
 
 -- Function to toggle pause
 togglePause :: GameState -> IO GameState
 togglePause gs = do
-  putStrLn "Toggle pause..."
   return gs { gameStatus = if gameStatus gs == Paused then Playing else Paused }
 
 -- Exit game
 exitGame :: GameState -> IO GameState
 exitGame gs = do
-  putStrLn "Exiting game..."
   exitSuccess
