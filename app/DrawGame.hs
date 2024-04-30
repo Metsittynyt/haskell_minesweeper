@@ -87,8 +87,9 @@ gameButtons = [
 
 pauseButtonColor :: GameState -> Color
 pauseButtonColor gs = case gameStatus gs of
-    Paused -> greyN 0.5   -- Gray color when the game is paused
-    _      -> orange      -- Orange color when the game is active
+    Paused -> greyN 0.5   -- Paused
+    Playing -> orange     -- Playing
+    _ -> greyN 0.75       -- Disabled
 
 -- Back to menu
 backToMenu :: GameState -> IO GameState
@@ -97,8 +98,10 @@ backToMenu gs = do
 
 -- Function to toggle pause
 togglePause :: GameState -> IO GameState
-togglePause gs = do
-  return gs { gameStatus = if gameStatus gs == Paused then Playing else Paused }
+togglePause gs = case gameStatus gs of
+  Playing -> return gs { gameStatus = Paused }
+  Paused -> return gs {gameStatus = Playing}
+  _ -> return gs    -- Do nothing if the game is over
 
 -- Exit game
 exitGame :: GameState -> IO GameState
